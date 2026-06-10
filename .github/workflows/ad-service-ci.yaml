@@ -45,6 +45,11 @@ jobs:
         - name: Build application   
           run: ./gradlew --no-daemon installDist -PprotoSourceDir=./pb
 
+        - name: SonarCloud Scan
+          uses: Sonarsource/sonarqube-scan-action@v5
+          env:
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
     docker-build:
         name: Docker Build
         runs-on: ubuntu-latest
