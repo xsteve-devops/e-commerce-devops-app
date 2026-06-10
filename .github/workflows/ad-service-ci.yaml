@@ -24,7 +24,7 @@ jobs:
         name: Quality Check
         runs-on: ubuntu-latest
         env:
-          GRADLE_OPTS: >-
+          FORMAT_JVM_ARGS: >-
             --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
             --add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED
             --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED
@@ -51,7 +51,7 @@ jobs:
           run: chmod +x ./gradlew
         
         - name: Check Java format
-          run: ./gradlew --no-daemon verifyGoogleJavaFormat
+          run: ./gradlew --no-daemon verifyGoogleJavaFormat -Dorg.gradle.jvmargs="$FORMAT_JVM_ARGS"
 
         - name: Build application   
           run: ./gradlew --no-daemon installDist -PprotoSourceDir=./pb
