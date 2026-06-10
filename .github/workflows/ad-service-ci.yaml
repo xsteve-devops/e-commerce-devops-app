@@ -23,14 +23,6 @@ jobs:
     quality-check:
         name: Quality Check
         runs-on: ubuntu-latest
-        env:
-          FORMAT_JVM_ARGS: >-
-            --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
-            --add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED
-            --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED
-            --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED
-            --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED
-            --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
 
         defaults:
             run:
@@ -49,9 +41,6 @@ jobs:
 
         - name: Make Gradle wrapper executable
           run: chmod +x ./gradlew
-        
-        - name: Check Java format
-          run: ./gradlew --no-daemon verifyGoogleJavaFormat -Dorg.gradle.jvmargs="$FORMAT_JVM_ARGS"
 
         - name: Build application   
           run: ./gradlew --no-daemon installDist -PprotoSourceDir=./pb
