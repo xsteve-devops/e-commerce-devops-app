@@ -49,7 +49,8 @@ jobs:
           run: ./gradlew --no-daemon installDist -PprotoSourceDir=./pb
 
         - name: SonarCloud Scan
-          uses: Sonarsource/sonarqube-scan-action@v6
+          if: github.ref == 'refs/heads/main'
+          uses: sonarsource/sonarqube-scan-action@v6
           env:
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
