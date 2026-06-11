@@ -5,6 +5,8 @@ on:
     push:
         branches: 
         - main 
+        - 'ci/ad-service-workflow'
+
         paths:
         - 'src/ad/**'
         - '.github/workflows/ad-service-ci.yaml'
