@@ -5,7 +5,6 @@ on:
     push:
         branches: 
         - main 
-        - 'ci/ad-service-workflow'
 
         paths:
         - 'src/ad/**'
