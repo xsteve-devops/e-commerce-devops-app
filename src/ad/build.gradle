@@ -104,7 +104,7 @@ afterEvaluate {
 }
 
 googleJavaFormat {
-    toolVersion '1.18.1'
+    toolVersion '1.35.0'
 }
 
 // Inform IDEs like IntelliJ IDEA, Eclipse or NetBeans about the generated code.
