@@ -88,3 +88,30 @@ jobs:
         - name: Push Docker image
           if: github.event_name == 'push' && github.ref == 'refs/heads/main'
           run: docker push ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+  
+    update-infra-repo:
+        name: Update Infra Repository
+        runs-on: ubuntu-latest
+        needs: docker-build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+        env:
+            IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/ad-service:${{ github.sha }}
+            INFRA_REPO: e-commerce-devops-infra
+        steps:
+        - name: Checkout infra repo
+          uses: actions/checkout@v4
+          with:
+            repository: ${{ github.repository_owner }}/${{ env.INFRA_REPO }}
+            token: ${{ secrets.INFRA_REPO_TOKEN }}
+            path: infra-repo
+        
+        - name: Update service image tag
+          run: |
+            cd infra-repo
+            sed -i "s|image: .*ad-service:.*$|image: ${{ env.IMAGE }}|" kubernetes/core-services/ad/deploy.yaml
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add kubernetes/core-services/ad/deploy.yaml
+            git commit -m "deploy: update ad service image tag to ${{ github.sha }}"
+            git push
