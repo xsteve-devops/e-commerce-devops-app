@@ -13,6 +13,10 @@ The project uses a two-repository design:
 
 This repository focuses on how application code is built, validated, packaged, and released as container images. Infrastructure and Kubernetes deployment state are managed in the infra repository.
 
+## Architecture
+
+![Two Repository GitOps Workflow](docs/images/two-repo-gitops-workflow.png)
+
 ## Current Scope
 
 The current implementation focuses on the Ad Service as the first completed service.
@@ -55,6 +59,8 @@ src/
 ```
 
 ## CI/CD Workflow
+
+![App CI/CD Pipeline](docs/images/app-ci-cd-pipeline.png)
 
 The Ad Service workflow is implemented with GitHub Actions.
 
