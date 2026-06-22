@@ -1,96 +1,174 @@
-# E-Commerce DevOps Implementation
+# E-Commerce DevOps Application
 
-## 项目概述
+## Overview
 
-本项目基于 [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) 进行 DevOps 实践改造。
+This repository contains the application-side implementation for my E-Commerce DevOps project.
 
-我从原始微服务项目中选取了三个服务：
+The project is based on the OpenTelemetry Demo. I selected several microservices from the original demo and rebuilt the delivery workflow with a DevOps-focused approach, including Docker image creation, GitHub Actions CI, image scanning, image publishing, and GitOps manifest updates.
 
-- Ad Service
-- Product Catalog Service
-- Recommendation Service
+The project uses a two-repository design:
 
-目标是围绕这三个服务构建一套完整的端到端 DevOps 流程，包括 Docker 镜像构建、GitHub Actions CI、AWS ECR 镜像推送、Terraform 基础设施创建、Kubernetes 声明式部署，以及基于 Argo CD 的 GitOps 持续交付。
+- `e-commerce-devops-app`: application source code, Dockerfiles, GitHub Actions workflows, image build, image scan, and image publishing
+- `e-commerce-devops-infra`: Terraform infrastructure code, Kubernetes manifests, Argo CD Applications, and GitOps desired state
 
-本项目重点不是简单地运行一个 demo，而是模拟真实团队中的 DevOps 交付流程：应用代码和基础设施配置分离，CI 负责构建不可变镜像，CD 通过 GitOps 方式将声明式配置同步到 AWS EKS。
+This repository focuses on how application code is built, validated, packaged, and released as container images. Infrastructure and Kubernetes deployment state are managed in the infra repository.
 
-## 项目目标
+## Architecture
 
-- 为 Go、Java、Python 三个不同技术栈的微服务编写 Dockerfile
-- 使用 GitHub Actions 自动完成构建、测试和镜像推送
-- 使用 AWS ECR 作为容器镜像仓库
-- 使用 Terraform 创建 AWS VPC、EKS Cluster、Node Group 和 IAM 相关资源
-- 使用 Kubernetes YAML 定义 Deployment、Service、ConfigMap 等资源
-- 使用 Argo CD 实现 GitOps 持续交付
-- 实现从代码提交到 EKS 自动部署的完整流程
-- 记录部署、验证、回滚和故障排查过程，用于项目复盘和面试展示
+![Two Repository GitOps Workflow](docs/images/two-repo-gitops-workflow.png)
 
-## 技术栈
+## Current Scope
 
-| 分类 | 技术 |
-|---|---|
-| Source Control | GitHub |
-| CI | GitHub Actions |
-| CD | Argo CD |
-| Container | Docker |
-| Container Registry | AWS ECR |
-| Infrastructure as Code | Terraform |
-| Kubernetes Platform | AWS EKS |
-| Deployment | Kubernetes YAML, GitOps |
-| Application Services | Go, Java, Python |
-| Cloud Provider | AWS |
+The current implementation focuses on the Ad Service as the first completed service.
 
-## Repository Design
+Completed for Ad Service:
 
-本项目采用双仓库设计，将应用代码和基础设施配置分离。
-
-### App Repository
-
-`e-commerce-devops-app` 负责应用相关内容：
-
-- 微服务源码
-- Dockerfile
-- 单元测试
+- Multi-stage Dockerfile
+- Java Gradle build validation
 - GitHub Actions CI workflow
 - Docker image build
-- Push image to AWS ECR
+- Trivy image scan
+- SonarCloud code quality scan on the main branch
+- Docker image publishing with SHA-based tags
+- Automatic update of the Kubernetes image tag in the infra repository
 
-### Infra Repository
+Product Catalog Service and Recommendation Service are planned as the next services to be added following the same workflow.
 
-`e-commerce-devops-infra` 负责基础设施和部署状态：
-
-- Terraform infrastructure code
-- AWS EKS cluster configuration
-- Kubernetes manifests
-- Argo CD Application manifests
-- GitOps desired state
-
-这样设计的原因是：CI pipeline 只负责构建和发布不可变镜像，不直接操作 Kubernetes 集群。部署状态由 Git 中的 Kubernetes manifests 声明，Argo CD 负责将 Git 中的期望状态同步到 EKS，从而实现可追溯、可回滚、声明式的持续交付流程。
-
-## 架构设计
+## Repository Structure
 
 ```text
-Developer
-   |
-   | git push / pull request
-   v
-GitHub Actions
-   |
-   | build / test / docker build
-   v
-AWS ECR
-   |
-   | push image with version tag
-   v
-Update Infra Repository
-   |
-   | update Kubernetes image tag
-   v
-Argo CD
-   |
-   | detect Git changes and sync desired state
-   v
-AWS EKS
-   |
-   v
-Ad / Product Catalog / Recommendation Services
+.github/
+  workflows/
+    ad-service-ci.yaml
+
+src/
+  ad/
+    Dockerfile
+    build.gradle
+    settings.gradle
+    src/
+    pb/
+
+  product-catalog/
+    Dockerfile
+    ...
+
+  recommendation/
+    Dockerfile
+    ...
+```
+
+## CI/CD Workflow
+
+![App CI/CD Pipeline](docs/images/app-ci-cd-pipeline.png)
+
+The Ad Service workflow is implemented with GitHub Actions.
+
+### Pull Request Flow
+
+When a pull request targets the `main` branch, the workflow runs validation steps without publishing images.
+
+```text
+Pull Request
+  -> Gradle build validation
+  -> Docker image build
+  -> Trivy image scan
+```
+
+This ensures that code changes can be built and packaged safely before being merged.
+
+### Main Branch Flow
+
+When changes are merged into the `main` branch, the workflow runs the release flow.
+
+```text
+Push to main
+  -> Gradle build validation
+  -> SonarCloud scan
+  -> Docker image build
+  -> Trivy image scan
+  -> Push Docker image
+  -> Update Kubernetes image tag in infra repository
+```
+
+The workflow does not deploy directly to Kubernetes. Instead, it updates the Kubernetes manifest in the infrastructure repository. Argo CD then detects the Git change and synchronizes the desired state to AWS EKS.
+
+## Image Tagging Strategy
+
+Docker images are tagged using the GitHub commit SHA.
+
+```text
+<registry>/<image-name>:<github-sha>
+```
+
+Using the commit SHA makes each image version traceable back to the exact source code revision that produced it.
+
+## Ad Service Docker Build
+
+Ad Service is a Java Gradle application.
+
+The Dockerfile uses a multi-stage build:
+
+```text
+builder stage
+  -> install dependencies
+  -> build application with Gradle
+  -> generate runnable distribution
+
+runtime stage
+  -> copy built application
+  -> run the service
+```
+
+The Gradle build command used for the service is:
+
+```bash
+./gradlew --no-daemon installDist -PprotoSourceDir=./pb
+```
+
+The final runtime image only contains the files required to run the service, which reduces image size and keeps build-time dependencies out of the runtime layer.
+
+## Quality And Security Checks
+
+The workflow currently includes:
+
+- Gradle build validation
+- SonarCloud scan
+- Docker image build validation
+- Trivy image vulnerability scan
+
+SonarCloud is used for source code quality analysis. Trivy is used to scan container images for operating system and application dependency vulnerabilities.
+
+## GitOps Integration
+
+After a successful main-branch release, the workflow updates the image tag in the infra repository.
+
+```text
+Application repository
+  -> build and push image
+  -> update image tag in infrastructure repository
+  -> Argo CD syncs the updated manifest to EKS
+```
+
+This keeps the application CI pipeline separated from direct cluster access. The Kubernetes cluster state is managed declaratively through GitOps.
+
+## Related Repository
+
+Infrastructure, Kubernetes manifests, and Argo CD configuration are managed in:
+
+```text
+e-commerce-devops-infra
+```
+
+## Tech Stack
+
+- Java
+- Gradle
+- Docker
+- GitHub Actions
+- Docker Hub
+- Trivy
+- SonarCloud
+- Kubernetes
+- Argo CD
+- GitOps
