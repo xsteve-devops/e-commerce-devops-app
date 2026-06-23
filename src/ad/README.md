@@ -1,43 +1,51 @@
-# E-Commerce DevOps Implementation
+# Ad Service
 
-## 项目概述
+The Ad service provides advertisements based on context keys. If no context keys are provided, it returns random ads.
 
-本项目基于 [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) 进行 DevOps 实践改造。
+## Building Locally
 
-我从原始微服务项目中选取了三个服务：
+The Ad service requires JDK 21 to build and uses the Gradle wrapper to compile, install, and distribute the application.
 
-- Ad Service
-- Product Catalog Service
-- Recommendation Service
+From the `src/ad` directory, run:
 
-目标是为这三个服务构建一套完整的端到端 DevOps 流程，包括本地容器化、CI 镜像构建、镜像推送、基础设施自动化、Kubernetes 声明式部署，以及基于 Argo CD 的 GitOps 持续交付。
+```sh
+./gradlew --no-daemon installDist -PprotoSourceDir=./pb
+```
 
-本项目采用双仓库设计：
+It will create an executable script:
 
-- `e-commerce-devops-app`：应用源码、Dockerfile、测试、GitHub Actions CI、镜像构建与推送
-- `e-commerce-devops-infra`：Terraform、EKS、Kubernetes manifests、Argo CD Application、GitOps deployment
+```text
+build/install/opentelemetry-demo-ad/bin/Ad
+```
 
-## 项目目标
+To run the Ad Service:
 
-- 为三个不同语言的微服务编写和优化 Dockerfile
-- 使用 GitHub Actions 自动完成测试、构建、镜像扫描和推送
-- 使用 AWS ECR 作为容器镜像仓库
-- 使用 Terraform 创建 AWS VPC、EKS Cluster、Node Group 和相关 IAM 资源
-- 使用 Kubernetes YAML 以声明式方式定义服务部署
-- 使用 Argo CD 实现 GitOps 持续交付
-- 实现从代码提交到 EKS 自动部署的完整流程
-- 记录部署过程、故障排查和回滚方式，用于面试展示和复盘
+```sh
+export AD_PORT=8080
+export FEATURE_FLAG_GRPC_SERVICE_ADDR=featureflagservice:50053
+./build/install/opentelemetry-demo-ad/bin/Ad
+```
 
-## 技术栈
+### Upgrading Gradle
 
-| 分类 | 技术 |
-|---|---|
-| Source Control | GitHub |
-| CI/CD | GitHub Actions, Argo CD |
-| Container | Docker |
-| Container Registry | AWS ECR |
-| Infrastructure as Code | Terraform |
-| Kubernetes Platform | AWS EKS |
-| Deployment | Kubernetes YAML, GitOps |
-| Services | Go, Java, Python |
-| Security | GitHub Secrets, IAM, Image Scan |
+If you need to upgrade the version of Gradle, run:
+
+```sh
+./gradlew wrapper --gradle-version <new-version>
+```
+
+## Building Docker
+
+This Dockerfile is designed to use `src/ad` as the Docker build context.
+
+From the repository root, run:
+
+```sh
+docker build -t ad-service:test -f src/ad/Dockerfile src/ad
+```
+
+Or from the `src/ad` directory, run:
+
+```sh
+docker build -t ad-service:test .
+```
