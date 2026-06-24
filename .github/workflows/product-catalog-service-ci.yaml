@@ -19,7 +19,7 @@ env:
 
 jobs:
     product-catalog-quality-check:
-        name: Quality Check
+        name: Product Catalog Quality Check
         runs-on: ubuntu-latest
 
         defaults:
@@ -56,7 +56,7 @@ jobs:
         
 
     product-catalog-docker-build:
-        name: Docker Build
+        name: Product Catalog Docker Build
         runs-on: ubuntu-latest
         needs: product-catalog-quality-check
 
@@ -89,7 +89,7 @@ jobs:
           run: docker push ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
     product-catalog-update-infra-repo:
-        name: Update Infra Repository
+        name: Product Catalog Update Infra Repository
         runs-on: ubuntu-latest
         needs: product-catalog-docker-build
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -20,7 +20,7 @@ env:
 
 jobs:
     quality-check:
-        name: Quality Check
+        name: Ad Service Quality Check
         runs-on: ubuntu-latest
 
         defaults:
@@ -51,7 +51,7 @@ jobs:
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     docker-build:
-        name: Docker Build
+        name: Ad Service Docker Build
         runs-on: ubuntu-latest
         needs: quality-check
 
@@ -84,7 +84,7 @@ jobs:
           run: docker push ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
   
     update-infra-repo:
-        name: Update Infra Repository
+        name: Ad Service Update Infra Repository
         runs-on: ubuntu-latest
         needs: docker-build
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
