@@ -44,12 +44,6 @@ jobs:
         - name: Build application   
           run: ./gradlew --no-daemon installDist -PprotoSourceDir=./pb
 
-        - name: SonarCloud Scan
-          if: github.ref == 'refs/heads/main'
-          uses: sonarsource/sonarqube-scan-action@v6
-          env:
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
     docker-build:
         name: Ad Service Docker Build
         runs-on: ubuntu-latest
