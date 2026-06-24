@@ -12,7 +12,7 @@ WORKDIR /usr/src/app
 
 COPY --from=builder /usr/src/app/product-catalog .
 COPY ./products ./products
-ENV PRODUCT_CATALOG_PORT=8088
+ENV PRODUCT_CATALOG_PORT=8080
 
 RUN adduser -D -u 10001 appuser
 USER appuser
