@@ -7,7 +7,7 @@ on:
         - main
         paths:
         - 'src/product-catalog/**'
-        - 'sonar-project.properties'
+        - '.github/workflows/product-catalog-service-ci.yaml'
 
     pull_request:
         branches:

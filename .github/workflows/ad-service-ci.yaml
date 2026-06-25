@@ -8,7 +8,8 @@ on:
 
         paths:
         - 'src/ad/**'
-        - 'sonar-project.properties'
+        - '.github/workflows/ad-service-ci.yaml'
+
 
     pull_request:
         branches: 

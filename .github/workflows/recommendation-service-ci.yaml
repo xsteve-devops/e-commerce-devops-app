@@ -1,0 +1,107 @@
+
+name: recommendation-service-ci
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/recommendation/**'
+      - '.github/workflows/recommendation-service-ci.yaml'
+      
+  pull_request:
+    branches:
+      - main
+
+env:
+  IMAGE_NAME: recommendation-service
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  recommendation-quality-check:
+    name: Recommendation Service Quality Check
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: src/recommendation
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+        cache-dependency-path: src/recommendation/requirements.txt
+
+    - name: Download Python modules
+      run: python -m pip install -r requirements.txt
+
+    - name: Quality Check
+      run:  |
+        python -m compileall .
+        python -m py_compile recommendation_server.py logger.py metrics.py demo_pb2.py demo_pb2_grpc.py
+  
+  recommendation-docker-build:
+    name: Recommendation Service Docker Build
+    runs-on: ubuntu-latest
+    needs: recommendation-quality-check
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: docker build -t ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} -f src/recommendation/Dockerfile src/recommendation
+
+    - name: Scan Docker image with Trivy
+      uses: aquasecurity/trivy-action@v0.36.0
+      with:
+        image-ref: ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+        format: table
+        exit-code: '0'
+        ignore-unfixed: true
+        vuln-type: os,library
+        severity: HIGH,CRITICAL
+
+    - name: Login to Docker Hub
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ vars.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: Push Docker image
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: docker push ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+  
+  recommendation-update-infra-repo:
+    name: Recommendation Service Update Infra Repository
+    runs-on: ubuntu-latest
+    needs: recommendation-docker-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    env:
+        IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/recommendation-service:${{ github.sha }}
+        INFRA_REPO: e-commerce-devops-infra
+    steps:
+    - name: Checkout infra repo
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository_owner }}/${{ env.INFRA_REPO }}
+        token: ${{ secrets.INFRA_REPO_TOKEN }}
+        path: infra-repo
+    
+    - name: Update service image tag
+      run: |
+        cd infra-repo
+        sed -i "s|image: .*recommendation-service:.*$|image: ${{ env.IMAGE }}|" kubernetes/core-services/recommendation/deploy.yaml
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add kubernetes/core-services/recommendation/deploy.yaml
+        git commit -m "deploy: update recommendation service image tag to ${{ github.sha }}"
+        git push
+
