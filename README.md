@@ -38,10 +38,11 @@ Current project status:
 ```text
 Application CI/CD implementation: completed
 Infra GitOps manifests: completed
-Final EKS end-to-end validation: pending
+EKS end-to-end validation: completed
+Cleanup validation: completed
 ```
 
-The final EKS validation will verify that Terraform, Argo CD, Kubernetes manifests, the AWS Load Balancer Controller, and the three service deployment flow work together end to end.
+The complete delivery flow has been validated from application code merge to Docker image publishing, infra repository manifest update, Argo CD synchronization, and service deployment on AWS EKS.
 
 ## Repository Structure
 
@@ -172,7 +173,7 @@ Docker Hub push on main
 Infra manifest image tag update on main
 ```
 
-A lightweight syntax and bytecode validation step is used as the quality gate. Future improvements could include `pytest` and `ruff`.
+A lightweight syntax and bytecode validation step is used as the service quality check before the Docker image is built.
 
 ## SonarCloud Scan
 
@@ -236,6 +237,29 @@ Application repository
 ```
 
 This keeps the application CI pipeline separated from direct cluster access. The Kubernetes cluster state is managed declaratively through GitOps.
+
+## Validation
+
+The full application delivery flow was validated together with the infrastructure repository.
+
+Validated items:
+
+- Pull request checks completed successfully for service workflows
+- Main branch release workflows pushed Docker images to Docker Hub
+- Docker images were tagged with the GitHub commit SHA
+- Service workflows updated the corresponding Kubernetes image tags in the infra repository
+- Argo CD synchronized the updated manifests to AWS EKS
+- Ad, Product Catalog, and Recommendation services were deployed successfully
+- The frontend was reachable through the AWS ALB endpoint
+
+## Future Improvements
+
+The end-to-end CI/CD and GitOps deployment flow has been validated successfully.
+
+Future improvements may include:
+
+- Add monitoring and alerting in a future observability phase
+- Extend the same CI/CD and GitOps pattern to additional microservices
 
 ## Related Repository
 
